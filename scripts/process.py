@@ -11,7 +11,8 @@ import json
 from pathlib import Path
 
 # Tweak Config stuff
-MAXPROCESS=10
+MAXPROCESS=10 # Change to 50 or so maybe
+# MAXPOKEAPIPERMINUTE=50
 
 # Probably won't change
 POKEAPI="https://pokeapi.co/api/v2/"
@@ -21,61 +22,45 @@ THUMBDIR="thumb"
 DATAFILE="data.json"
 
 
-def CreatePokemonData(entry = None):
-    data = {}
-    data["number"] = 0
-    return data
-
-# Classes to hold standardized data
-class PokemonData:
-    def __init__(self):
-        self.name = None
-        self.path = None
-        self.number = 0
-        self.created = None
-        self.processed = None
-
-    def FromFileEntry(entry):
-        data = PokemonData()
-        data.path = entry.path
-        data.name = os.path.splitext(entry.name)[0]
-        data.created = CreateDate(entry.stat())
-        return data
-
-    def AsSerializable(self):
-        base = self.__dict__
-        base["created"] = SerializeDate(base["created"])
-        base["processed"] = SerializeDate(base["processed"])
-        return base
-
-
-class FullData:
-    def __init__(self):
-        self.list = []
-
-    def AsSerialize(self):
-        base = self.__dict__
-        base["list"] = [x.AsSerializable() for x in base["list"]]
-        return base
-
-
+# Generic Utilities
 def SerializeDate(date):
     if date is not None:
         return str(date)
     return date
 
-# Global functions for whatever
 def CreateDate(statData):
     return datetime.datetime.fromtimestamp(statData.st_mtime)
 
+# Global functions for whatever
+def CreatePokemonData(entry = None):
+    data = {}
+    data["name"] = os.path.splitext(entry.name)[0] if entry else None
+    data["number"] = 0
+    data["path"] = entry.path if entry else None
+    data["created"] = str(CreateDate(entry.stat())) if entry else None
+    data["processed"] = None
+    return data
+
+def CreateMasterData(existingData = []):
+    data = {}
+    data["list"] = existingData
+    return data
+
 # Get the data for all the raw files
 def GetRawData(directory):
-    result = []
     with os.scandir(directory) as entries:
-        for entry in entries:
-            if entry.is_file():
-                result.append(PokemonData.FromFileEntry(entry))
-    return result
+        return [ CreatePokemonData(entry) for entry in entries if entry.is_file() ]
+
+# Get the existing "full" data
+def GetFullData(file):
+    try:
+        # I guess default is read?
+        with open(file) as f:
+            return json.load(f)
+    except Exception as ex:
+        print("Warn: couldn't read full data, defaulting to blank: " + str(ex))
+        return CreateMasterData()
+
 
 # The main process loop.
 # Posibility for race condition; probably won't happen though
@@ -85,6 +70,7 @@ if os.path.exists(LOCKFILE):
 
 try:
     Path(LOCKFILE).touch()
-    print(json.dumps([x.AsSerializable() for x in GetRawData(RAWDIR)]))
+    # print(json.dumps([x.AsSerializable() for x in GetRawData(RAWDIR)]))
+    print(json.dumps(GetRawData(RAWDIR)))
 finally:
     os.remove(LOCKFILE)
