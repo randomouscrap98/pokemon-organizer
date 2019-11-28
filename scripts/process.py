@@ -107,9 +107,10 @@ def Process():
             MergePokeApiData(pData, newData)
             full["list"].append(newData)
 
-    print("Writing " + DATAFILE)
-    with open(DATAFILE, "w") as f:
-        json.dump(full, f)
+    if processed > 0:
+        print("Writing " + DATAFILE)
+        with open(DATAFILE, "w") as f:
+            json.dump(full, f)
 
 
 # Now just... run some code! yaaayyy
