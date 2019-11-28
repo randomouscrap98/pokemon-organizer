@@ -117,8 +117,13 @@ def Process():
                 continue
             newData = copy.deepcopy(raw)
             MergePokeApiData(pData, newData)
-            newData["thumb"] = MakeThumbnail(newData["path"])
             full["list"].append(newData)
+
+    for data in full["list"]:
+        if data["thumb"] is None or not os.path.exists(data["thumb"]):
+            print("Creating thumbnail for " + data["path"])
+            data["thumb"] = MakeThumbnail(data["path"])
+            processed+=1
 
     if processed > 0:
         print("Writing " + DATAFILE)
