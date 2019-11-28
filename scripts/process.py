@@ -10,10 +10,12 @@ import sys
 import json
 import requests
 import copy
+from PIL import Image
 from pathlib import Path
 
 # Tweak Config stuff
 MAXPROCESS=10 # Change to 50 or so maybe
+THUMBSIZE=200,200
 
 # Probably won't change
 POKEAPI="https://pokeapi.co/api/v2/"
@@ -61,6 +63,7 @@ def CreatePokeData(entry = None):
     data = {}
     data["name"] = os.path.splitext(entry.name)[0] if entry else None
     data["number"] = 0
+    data["thumb"] = None
     data["path"] = entry.path if entry else None
     data["created"] = str(CreateDate(entry.stat())) if entry else None
     data["processed"] = None
@@ -86,10 +89,19 @@ def GetFullData(file):
         print("Warn: couldn't read full data, defaulting to blank: " + str(ex))
         return CreateMasterData()
 
+# Make thumbnail using "defaults"
+def MakeThumbnail(file):
+    im = Image.open(file)
+    im.thumbnail(THUMBSIZE, Image.ANTIALIAS)
+    thumbFile = THUMBDIR+"/"+os.path.basename(file)
+    im.save(thumbFile, quality=95)
+    return thumbFile
+
 # The main process loop. Can be called anywhere
 def Process():
     full=GetFullData(DATAFILE)
     processed=0
+    Path(THUMBDIR).mkdir(parents=True, exist_ok=True)
 
     for raw in GetRawData(RAWDIR):
         if processed >= MAXPROCESS:
@@ -105,6 +117,7 @@ def Process():
                 continue
             newData = copy.deepcopy(raw)
             MergePokeApiData(pData, newData)
+            newData["thumb"] = MakeThumbnail(newData["path"])
             full["list"].append(newData)
 
     if processed > 0:
