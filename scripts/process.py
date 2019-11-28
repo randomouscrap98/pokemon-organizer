@@ -31,8 +31,20 @@ def SerializeDate(date):
 def CreateDate(statData):
     return datetime.datetime.fromtimestamp(statData.st_mtime)
 
+# Posibility for race condition; probably won't happen though.
+# Also, don't exit the program in your function lol
+def FileLockSingleProcess(func, file):
+    if os.path.exists(file):
+        raise Exception("Lock can't be grabbed")
+    try:
+        Path(file).touch()
+        func()
+    finally:
+        os.remove(file)
+
+
 # Global functions for whatever
-def CreatePokemonData(entry = None):
+def CreatePokeData(entry = None):
     data = {}
     data["name"] = os.path.splitext(entry.name)[0] if entry else None
     data["number"] = 0
@@ -49,7 +61,7 @@ def CreateMasterData(existingData = []):
 # Get the data for all the raw files
 def GetRawData(directory):
     with os.scandir(directory) as entries:
-        return [ CreatePokemonData(entry) for entry in entries if entry.is_file() ]
+        return [ CreatePokeData(entry) for entry in entries if entry.is_file() ]
 
 # Get the existing "full" data
 def GetFullData(file):
@@ -61,16 +73,30 @@ def GetFullData(file):
         print("Warn: couldn't read full data, defaulting to blank: " + str(ex))
         return CreateMasterData()
 
+# The main process loop. Can be called anywhere
+def Process():
+    full=GetFullData(DATAFILE)
+    # full["list"].sort(key=ComparePokeData)
+    processed=0
+    # index=0
+    for raw in GetRawData(RAWDIR): # sorted(GetRawData(RAWDIR),key=ComparePokeData):
+        if processed >= MAXPROCESS:
+            print("Hit process cap (" + str(MAXPROCESS) + "), must quit")
+            break
+        if not raw["name"] in [x["name"] for x in full["list"]]:
+            print("Looking up: " + raw["name"])
+            processed+=1
+        # print(json.dumps(raw))
+        # index+=1
+    print("Writing " + DATAFILE)
+    with open(DATAFILE, "w") as f:
+        json.dump(full, f)
 
-# The main process loop.
-# Posibility for race condition; probably won't happen though
-if os.path.exists(LOCKFILE):
+
+# Now just... run some code! yaaayyy
+try:
+    FileLockSingleProcess(Process, LOCKFILE)
+except:
     print("Another process is processing pokemon files right now")
     sys.exit(1)
 
-try:
-    Path(LOCKFILE).touch()
-    # print(json.dumps([x.AsSerializable() for x in GetRawData(RAWDIR)]))
-    print(json.dumps(GetRawData(RAWDIR)))
-finally:
-    os.remove(LOCKFILE)
