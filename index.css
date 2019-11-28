@@ -12,12 +12,16 @@ footer
    margin-top: 1em;
 }
 
-footer span
+footer .credit
 {
    float: right;
-   margin: 0 0.5em;
-   color: #777;
+}
+
+.credit span, .credit a:link, .credit a:visited
+{
    font-style: italic;
+   margin: 0 0.075em;
+   color: #777;
 }
 
 #pokemon th.preview
@@ -48,4 +52,10 @@ a:link, a:visited
 #pokemon th.name
 {
    text-align: left;
+}
+
+#tools
+{
+   float: left;
+   display: inline-block;
 }
