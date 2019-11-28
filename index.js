@@ -7,8 +7,8 @@ $(document).ready(function()
    var findSubmit = $("#formfindersubmit");
    findSubmit.click(function()
    {
-      var species = $("#formfinderinput");
-      var url = encodeURI("https://pokeapi.co/api/v2/pokemon-species/" + species.val());
+      var species = $("#formfinderinput").val().toLowerCase();
+      var url = encodeURI("https://pokeapi.co/api/v2/pokemon-species/" + species);
       $.getJSON(url, function(data)
       {
          var forms = "Forms: \n";
