@@ -20,17 +20,32 @@ footer span
    font-style: italic;
 }
 
-/*#pokemon .name, #pokemon .number
+#pokemon th.preview
 {
-   font-size: 1.3em;
-}*/
+   /* A hack I don't understand... */
+   width: 7rem !important;
+}
+
+a:link, a:visited
+{
+   color: #333;
+}
 
 #pokemon .preview a
 {
-   width: 7em;
+   display: inline-block;
+   padding: 0;
+   margin: 0;
+   width: 7rem;
 }
 
 #pokemon .preview img
 {
-   max-width: 7em;
+   display: inline-block;
+   width: 100%;
+}
+
+#pokemon th.name
+{
+   text-align: left;
 }

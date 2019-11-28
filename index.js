@@ -16,6 +16,7 @@ $(document).ready(function()
          "data" : data.list,
          "pageLength" : 50,
          "order" : [[ 2, "asc" ]],
+         "autoWidth" : true,
          "columns" : [
             { "data" : "thumb",
               "orderable" : false,
@@ -31,7 +32,15 @@ $(document).ready(function()
               }
             },
             { "data" : "name",
-              "class" : "name" 
+              "class" : "name",
+              "render" : function(data, type, row, meta)
+              {
+                 var link = $("<a></a>");
+                 link.text(data);
+                 link.attr("href", encodeURI(
+                    "https://www.serebii.net/pokemon/" + row["species"] + "/"));
+                 return link[0].outerHTML;
+              }
             },
             { "data" : "number",
               "class" : "number"
