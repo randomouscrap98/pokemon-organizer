@@ -14,7 +14,7 @@ from PIL import Image
 from pathlib import Path
 
 # Tweak Config stuff
-MAXPROCESS=10 # Change to 50 or so maybe
+MAXPROCESS=30 # Change to 50 or so maybe
 THUMBSIZE=200,200
 USER="Random"
 
@@ -24,6 +24,18 @@ LOCKFILE=".lock"
 RAWDIR="raw"
 THUMBDIR="thumb"
 DATAFILE="data.json"
+GENERATIONS=[
+    "generation-i",
+    "generation-ii",
+    "generation-iii",
+    "generation-iv",
+    "generation-v",
+    "generation-vi",
+    "generation-vii",
+    "generation-viii",
+    "generation-ix",
+    "generation-x"
+]
 
 
 # Just a class so I can say "Hey the lock wasn't grabbed" instead of just
@@ -56,9 +68,16 @@ def GetPokeApiData(name):
     response.raise_for_status()
     return response.json()
 
-def MergePokeApiData(pokeApi, raw):
+def GetPokeApiSpeciesData(species):
+    response = requests.get(POKEAPI+"pokemon-species/"+species)
+    response.raise_for_status()
+    return response.json()
+
+def MergePokeApiData(pokeApi, pokeSpecies, raw):
     raw["number"] = int(pokeApi["id"])
+    raw["species"] = pokeApi["species"]["name"]
     raw["processed"] = str(datetime.datetime.now())
+    raw["generation"] = GENERATIONS.index(pokeSpecies["generation"]["name"]) + 1
 
 def CreatePokeData(entry = None):
     data = {}
@@ -68,6 +87,7 @@ def CreatePokeData(entry = None):
     data["path"] = entry.path if entry else None
     data["created"] = str(CreateDate(entry.stat())) if entry else None
     data["processed"] = None
+    data["species"] = None
     return data
 
 def CreateMasterData(existingData = []):
@@ -114,11 +134,12 @@ def Process():
             processed+=1
             try:
                 pData = GetPokeApiData(raw["name"])
+                pSpeciesData = GetPokeApiSpeciesData(pData["species"]["name"])
             except Exception as ex:
                 print("ERROR: Couldn't look up " + raw["name"] + ": " + str(ex))
                 continue
             newData = copy.deepcopy(raw)
-            MergePokeApiData(pData, newData)
+            MergePokeApiData(pData, pSpeciesData, newData)
             full["list"].append(newData)
 
     for data in full["list"]:

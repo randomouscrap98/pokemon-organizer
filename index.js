@@ -8,6 +8,7 @@ $(document).ready(function()
    {
       var header = $("h1");
       header.text(data.user + "'s " + header.text());
+      console.log(data);
 
       var pkmTable = $("#pokemon");
 
@@ -34,6 +35,16 @@ $(document).ready(function()
             },
             { "data" : "number",
               "class" : "number"
+            },
+            { "data" : "generation",
+              "class" : "generation"
+            },
+            { "data" : "created",
+              "class" : "created",
+              "render" : function(data)
+              {
+                 return data.slice(0, 10);
+              }
             },
          ]
       });
