@@ -37,6 +37,7 @@ $(document).ready(function()
               {
                  var link = $("<a></a>");
                  link.text(data);
+                 link.attr("target", "blank");
                  link.attr("href", encodeURI(
                     "https://www.serebii.net/pokemon/" + row["species"] + "/"));
                  return link[0].outerHTML;
