@@ -8,11 +8,12 @@ import os
 import datetime
 import sys
 import json
+import requests
+import copy
 from pathlib import Path
 
 # Tweak Config stuff
 MAXPROCESS=10 # Change to 50 or so maybe
-# MAXPOKEAPIPERMINUTE=50
 
 # Probably won't change
 POKEAPI="https://pokeapi.co/api/v2/"
@@ -21,6 +22,11 @@ RAWDIR="raw"
 THUMBDIR="thumb"
 DATAFILE="data.json"
 
+
+# Just a class so I can say "Hey the lock wasn't grabbed" instead of just
+# EXCEPTION AAAAA
+class LockException(Exception):
+    pass
 
 # Generic Utilities
 def SerializeDate(date):
@@ -35,15 +41,22 @@ def CreateDate(statData):
 # Also, don't exit the program in your function lol
 def FileLockSingleProcess(func, file):
     if os.path.exists(file):
-        raise Exception("Lock can't be grabbed")
+        raise LockException("Lock can't be grabbed")
     try:
         Path(file).touch()
         func()
     finally:
         os.remove(file)
 
+def GetPokeApiData(name):
+    response = requests.get(POKEAPI+"pokemon/"+name)
+    response.raise_for_status()
+    return response.json()
 
-# Global functions for whatever
+def MergePokeApiData(pokeApi, raw):
+    raw["number"] = int(pokeApi["id"])
+    raw["processed"] = str(datetime.datetime.now())
+
 def CreatePokeData(entry = None):
     data = {}
     data["name"] = os.path.splitext(entry.name)[0] if entry else None
@@ -76,18 +89,24 @@ def GetFullData(file):
 # The main process loop. Can be called anywhere
 def Process():
     full=GetFullData(DATAFILE)
-    # full["list"].sort(key=ComparePokeData)
     processed=0
-    # index=0
-    for raw in GetRawData(RAWDIR): # sorted(GetRawData(RAWDIR),key=ComparePokeData):
+
+    for raw in GetRawData(RAWDIR):
         if processed >= MAXPROCESS:
             print("Hit process cap (" + str(MAXPROCESS) + "), must quit")
             break
         if not raw["name"] in [x["name"] for x in full["list"]]:
             print("Looking up: " + raw["name"])
             processed+=1
-        # print(json.dumps(raw))
-        # index+=1
+            try:
+                pData = GetPokeApiData(raw["name"])
+            except Exception as ex:
+                print("ERROR: Couldn't look up " + raw["name"] + ": " + str(ex))
+                continue
+            newData = copy.deepcopy(raw)
+            MergePokeApiData(pData, newData)
+            full["list"].append(newData)
+
     print("Writing " + DATAFILE)
     with open(DATAFILE, "w") as f:
         json.dump(full, f)
@@ -96,7 +115,7 @@ def Process():
 # Now just... run some code! yaaayyy
 try:
     FileLockSingleProcess(Process, LOCKFILE)
-except:
+except LockException:
     print("Another process is processing pokemon files right now")
     sys.exit(1)
 
