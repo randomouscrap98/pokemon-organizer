@@ -16,6 +16,7 @@ from pathlib import Path
 # Tweak Config stuff
 MAXPROCESS=10 # Change to 50 or so maybe
 THUMBSIZE=200,200
+USER="Random"
 
 # Probably won't change
 POKEAPI="https://pokeapi.co/api/v2/"
@@ -72,6 +73,7 @@ def CreatePokeData(entry = None):
 def CreateMasterData(existingData = []):
     data = {}
     data["list"] = existingData
+    data["user"] = USER
     return data
 
 # Get the data for all the raw files

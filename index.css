@@ -5,3 +5,32 @@ body
    color: #333;
 }
 
+footer
+{
+   display: block;
+   overflow: hidden;
+   margin-top: 1em;
+}
+
+footer span
+{
+   float: right;
+   margin: 0 0.5em;
+   color: #777;
+   font-style: italic;
+}
+
+/*#pokemon .name, #pokemon .number
+{
+   font-size: 1.3em;
+}*/
+
+#pokemon .preview a
+{
+   width: 7em;
+}
+
+#pokemon .preview img
+{
+   max-width: 7em;
+}
