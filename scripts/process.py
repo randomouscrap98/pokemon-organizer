@@ -88,6 +88,7 @@ def CreatePokeData(entry = None):
     data["created"] = str(CreateDate(entry.stat())) if entry else None
     data["processed"] = None
     data["species"] = None
+    data["generation"] = None
     return data
 
 def CreateMasterData(existingData = []):
@@ -119,35 +120,62 @@ def MakeThumbnail(file):
     im.save(thumbFile, quality=95)
     return thumbFile
 
-# The main process loop. Can be called anywhere
-def Process():
-    full=GetFullData(DATAFILE)
-    processed=0
-    Path(THUMBDIR).mkdir(parents=True, exist_ok=True)
-
-    for raw in GetRawData(RAWDIR):
-        if processed >= MAXPROCESS:
-            print("Hit process cap (" + str(MAXPROCESS) + "), must quit")
+# Find new pokemon data.
+def DiscoverNew(fullData, rawData, maxDiscover):
+    processed = 0
+    for raw in rawData:
+        if processed >= maxDiscover:
+            print("Hit process cap (" + str(maxDiscover) + "), must quit")
             break
-        if not raw["name"] in [x["name"] for x in full["list"]]:
+        if not raw["name"] in [x["name"] for x in fullData["list"]]:
             print("Looking up: " + raw["name"])
+            newData = copy.deepcopy(raw)
             processed+=1
             try:
                 pData = GetPokeApiData(raw["name"])
                 pSpeciesData = GetPokeApiSpeciesData(pData["species"]["name"])
+                MergePokeApiData(pData, pSpeciesData, newData)
             except Exception as ex:
                 print("ERROR: Couldn't look up " + raw["name"] + ": " + str(ex))
-                continue
-            newData = copy.deepcopy(raw)
-            MergePokeApiData(pData, pSpeciesData, newData)
-            full["list"].append(newData)
+            # Notice: append new data even if nothing was looked up.
+            fullData["list"].append(newData)
+    return processed
 
-    for data in full["list"]:
+# Update missing thumbnails for all data in "fullData" (the whole data object,
+# not just the list)
+def UpdateThumbnails(fullData):
+    processed = 0
+    for data in fullData["list"]:
         if data["thumb"] is None or not os.path.exists(data["thumb"]):
             print("Creating thumbnail for " + data["path"])
             data["thumb"] = MakeThumbnail(data["path"])
             processed+=1
+    return processed
 
+# Removing items missing from rawData that are still in fullData
+def RemoveMissing(fullData, rawData):
+    removals=[]
+    processed=0
+    for data in fullData["list"]:
+        if not data["name"] in [x["name"] for x in rawData]:
+            removals.append(data)
+            processed+=1
+    for removal in removals:
+        print("Removing missing pokemon " + removal["name"])
+        fullData["list"].remove(removal)
+    return processed
+
+# The main process loop. Can be called anywhere
+def Process():
+    full=GetFullData(DATAFILE)
+    rawData=GetRawData(RAWDIR)
+    Path(THUMBDIR).mkdir(parents=True, exist_ok=True)
+
+    processed = DiscoverNew(full, rawData, MAXPROCESS)
+    processed += RemoveMissing(full, rawData)
+    processed += UpdateThumbnails(full)
+
+    # Only write back if something was processed
     if processed > 0:
         print("Writing " + DATAFILE)
         with open(DATAFILE, "w") as f:
