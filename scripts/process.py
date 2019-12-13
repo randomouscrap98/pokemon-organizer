@@ -184,6 +184,7 @@ def Process():
 
 # Now just... run some code! yaaayyy
 try:
+    print("Started: " + str(datetime.datetime.now()))
     FileLockSingleProcess(Process, LOCKFILE)
 except LockException:
     print("Another process is processing pokemon files right now")
