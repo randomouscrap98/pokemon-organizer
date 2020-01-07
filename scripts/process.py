@@ -81,7 +81,7 @@ def MergePokeApiData(pokeApi, pokeSpecies, raw):
 
 def CreatePokeData(entry = None):
     data = {}
-    data["name"] = os.path.splitext(entry.name)[0] if entry else None
+    data["name"] = os.path.splitext(entry.name)[0].lower() if entry else None
     data["number"] = 0
     data["thumb"] = None
     data["path"] = entry.path if entry else None
