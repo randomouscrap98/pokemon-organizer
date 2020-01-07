@@ -129,7 +129,7 @@ def MakeThumbnail(file):
     return thumbFile
 
 def GetApiName(name):
-    apiname = re.sub("[_\s]+", "-", name.lower())
+    apiname = re.sub("[_\s]+", "-", name.lower()).replace(".", "")
     if any(apiname.startswith(t) for t in REVERSEAPI):
         apiname = '-'.join(apiname.split('-')[::-1])
     if apiname.endswith("alolan"):
@@ -144,15 +144,25 @@ def DiscoverNew(fullData, rawData, maxDiscover):
             print("Hit process cap (" + str(maxDiscover) + "), must quit")
             break
         if not raw["name"] in [x["name"] for x in fullData["list"]]:
-            print("Looking up: " + raw["apiname"])
             newData = copy.deepcopy(raw)
+            print("Looking up: " + newData["apiname"])
             processed+=1
             try:
-                pData = GetPokeApiData(raw["apiname"])
+                try:
+                    pData = GetPokeApiData(newData["apiname"])
+                except:
+                    # Try a different approach: look up the species and if it
+                    # works, set api name to the first result.
+                    print("WARN: No exact name " + newData["apiname"] + ", trying species")
+                    tData = GetPokeApiSpeciesData(newData["apiname"])
+                    newData["apiname"] = tData["varieties"][0]["pokemon"]["name"]
+                    pData = GetPokeApiData(newData["apiname"])
+                # If you get here with no errors, you got a proper pokemon!
                 pSpeciesData = GetPokeApiSpeciesData(pData["species"]["name"])
                 MergePokeApiData(pData, pSpeciesData, newData)
             except Exception as ex:
-                print("ERROR: Couldn't look up " + raw["apiname"] + ": " + str(ex))
+                print("ERROR: Couldn't look up " + newData["apiname"] + ": " + str(ex))
+
             # Notice: append new data even if nothing was looked up.
             fullData["list"].append(newData)
     return processed
