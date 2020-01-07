@@ -44,6 +44,7 @@ function SetupPokeTable(pkmTable, data)
                var link = $("<a></a>");
                var image = $("<img>");
                link.attr("href", encodeURI(row.path));
+               link.attr("target", "_blank");
                image.attr("src", encodeURI(data));
                link.append(image);
                return link[0].outerHTML;
@@ -56,8 +57,10 @@ function SetupPokeTable(pkmTable, data)
                var link = $("<a></a>");
                link.text(data);
                link.attr("target", "blank");
-               link.attr("href", encodeURI(
-               "https://www.serebii.net/pokemon/" + row["species"] + "/"));
+               url = "https://www.serebii.net/pokemon/" + row["species"] + "/";
+               if(row["name"] === "DOG")
+                  url = "https://en.wikipedia.org/wiki/Dog";
+               link.attr("href", encodeURI(url));
                return link[0].outerHTML;
             }
          },
