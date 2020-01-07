@@ -10,11 +10,12 @@ import sys
 import json
 import requests
 import copy
+import re
 from PIL import Image
 from pathlib import Path
 
 # Tweak Config stuff
-MAXPROCESS=30 # Change to 50 or so maybe
+MAXPROCESS=50 # Change to 50 or so maybe
 THUMBSIZE=200,200
 USER="Random"
 
@@ -35,6 +36,12 @@ GENERATIONS=[
     "generation-viii",
     "generation-ix",
     "generation-x"
+]
+REVERSEAPI=[
+    "alolan",
+    "mega",
+    "primal",
+    "ash"
 ]
 
 
@@ -81,14 +88,15 @@ def MergePokeApiData(pokeApi, pokeSpecies, raw):
 
 def CreatePokeData(entry = None):
     data = {}
-    data["name"] = os.path.splitext(entry.name)[0].lower() if entry else None
-    data["number"] = 0
+    data["name"] = os.path.splitext(entry.name)[0] if entry else None
+    data["apiname"] = GetApiName(data["name"])
+    data["number"] = 999999
     data["thumb"] = None
     data["path"] = entry.path if entry else None
     data["created"] = str(CreateDate(entry.stat())) if entry else None
     data["processed"] = None
     data["species"] = None
-    data["generation"] = None
+    data["generation"] = 999 # None
     return data
 
 def CreateMasterData(existingData = []):
@@ -120,6 +128,14 @@ def MakeThumbnail(file):
     im.save(thumbFile, quality=95)
     return thumbFile
 
+def GetApiName(name):
+    apiname = re.sub("[_\s]+", "-", name.lower())
+    if any(apiname.startswith(t) for t in REVERSEAPI):
+        apiname = '-'.join(apiname.split('-')[::-1])
+    if apiname.endswith("alolan"):
+        apiname = apiname[:-1]
+    return apiname
+
 # Find new pokemon data.
 def DiscoverNew(fullData, rawData, maxDiscover):
     processed = 0
@@ -128,15 +144,15 @@ def DiscoverNew(fullData, rawData, maxDiscover):
             print("Hit process cap (" + str(maxDiscover) + "), must quit")
             break
         if not raw["name"] in [x["name"] for x in fullData["list"]]:
-            print("Looking up: " + raw["name"])
+            print("Looking up: " + raw["apiname"])
             newData = copy.deepcopy(raw)
             processed+=1
             try:
-                pData = GetPokeApiData(raw["name"])
+                pData = GetPokeApiData(raw["apiname"])
                 pSpeciesData = GetPokeApiSpeciesData(pData["species"]["name"])
                 MergePokeApiData(pData, pSpeciesData, newData)
             except Exception as ex:
-                print("ERROR: Couldn't look up " + raw["name"] + ": " + str(ex))
+                print("ERROR: Couldn't look up " + raw["apiname"] + ": " + str(ex))
             # Notice: append new data even if nothing was looked up.
             fullData["list"].append(newData)
     return processed
